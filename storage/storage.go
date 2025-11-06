@@ -57,11 +57,11 @@ func newItem(description string, status string) Item {
 	return item
 }
 
-func updateDescription(ctx context.Context, index int64, newDescription string) error {
+func updateDescription(ctx context.Context, index int64, description string) error {
 	return nil
 }
 
-func updateStatus(ctx context.Context, index int64, state int) error {
+func updateStatus(ctx context.Context, index int64, status string) error {
 	return nil
 }
 
