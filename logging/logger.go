@@ -96,29 +96,9 @@ func OpenLogFile(fileName string) (*os.File, error) {
 	return fi, nil
 }
 
-// OpenFileReadWrite opens (or creates) a file for reading and writing.
-func OpenFileReadWrite(fileName string) (*os.File, error) {
-	// open the file for reading and writing, creating it if it does not exist
-	// with permissions rw-r--r--
-	if fi, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644); err != nil {
-		slog.Error(fmt.Sprintf("%s\n", "Failed to open data file for reading and writing"))
-		slog.Error(err.Error())
-		return &os.File{}, err
-	} else {
-		return fi, nil
-	}
-}
-
-// OpenFileWriteTruncate opens (or creates) a file for writing, truncating it if it exists.
-func OpenFileWriteTruncate(fileName string) (*os.File, error) {
-	// open the file for writing, truncating it if it exists, or creating it if it does not exist
-	// with permissions rw-r--r--
-	// truncate mode so we start fresh
-	if fi, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644); err != nil {
-		slog.Error(fmt.Sprintf("%s\n", "Failed to open data file for writing and truncating"))
-		slog.Error(err.Error())
-		return &os.File{}, err
-	} else {
-		return fi, nil
-	}
+func LoggerOptions() slog.HandlerOptions {
+	// TODO: adjust options based on environment
+	var options slog.HandlerOptions
+	options = slog.HandlerOptions{AddSource: false}
+	return options
 }
