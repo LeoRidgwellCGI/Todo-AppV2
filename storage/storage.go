@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -119,31 +118,56 @@ func Open(ctx context.Context, datafile string) error {
 	return nil
 }
 
-func CreateItem(ctx context.Context, description string, optionalStatus string) (int, error) {
+func CreateItem(ctx context.Context, description string) (int, error) {
 	// Validate inputs
-	if !validateDescription(description) {
+	if description == "" {
 		return 0, errors.New("description cannot be empty")
 	}
-	status := StatusNotStarted
-	if optionalStatus != "" {
-		if !validateStatus(optionalStatus) {
-			return 0, errors.New("status is not valid, must be one of: " + strings.Join([]string{StatusNotStarted, StatusStarted, StatusCompleted}, ", "))
-		}
-		status = optionalStatus
-	}
+
 	// Determine next key
 	itemKeys := collectKeys(itemsList)
 	nextKey := highestKey(itemKeys) + 1
-	item := newItem(nextKey, description, status)
+	item := newItem(nextKey, description, StatusNotStarted)
 	itemsList[nextKey] = item
 
+	// Commit to file
+	CommitFile(ctx)
+
 	// Log creation
-	slog.InfoContext(ctx, "Added new item", "ID", item.ID, "Description", item.Description, "Status:", item.Status)
+	slog.InfoContext(ctx, "Created new item", "ID", item.ID, "Description", item.Description, "Status:", item.Status)
+	fmt.Printf("Created new item, ID: %d, Description: %s, Status: %s \n", item.ID, item.Description, item.Status)
+
+	// return new item ID
 	return nextKey, nil
 }
 
 func UpdateDescription(ctx context.Context, index int, description string) error {
+	// Validate inputs
+	if description == "" {
+		return errors.New("description cannot be empty")
+	}
+
+	// Update the item
 	fmt.Printf("Updating item description:\n")
+
+	// check item exists
+	item, exists := itemsList[index]
+	if !exists {
+		return errors.New("item not found")
+	}
+
+	// update description
+	item.Description = description
+	itemsList[index] = item
+
+	// Commit to file
+	CommitFile(ctx)
+
+	// Log update
+	slog.InfoContext(ctx, "Updated item description", "ID", item.ID, "New Description", item.Description)
+	fmt.Printf("Updated item description, ID: %d, New Description: %s \n", item.ID, item.Description)
+
+	// return nil error
 	return nil
 }
 
@@ -202,21 +226,6 @@ func CommitFile(ctx context.Context) {
 	if IsDataFileOpen() {
 		Save(ctx, itemsDatafile)
 	}
-}
-
-// getItems returns the current list of items
-func getItems() Items {
-	return itemsList
-}
-
-// resetItems clears the current list of items
-func resetItems() {
-	itemsList = Items{}
-}
-
-// validateDescription checks if the provided description is valid (non-empty).
-func validateDescription(description string) bool {
-	return description != ""
 }
 
 // validateStatus checks if the provided status is one of the valid statuses.

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 	"todo-app/logging"
 	"todo-app/storage"
 )
@@ -113,21 +112,16 @@ func main() {
 		return
 	}
 
-	descVal := ""
-	if flagCreate != nil {
-		descVal = strings.TrimSpace(*flagCreate)
-	}
-
 	// process the flags
 	switch {
 	case *flagList:
 		storage.ListItem(*flagItemID)
 	case *flagCreate != "":
-		if nextItem, ok := storage.CreateItem(ctx, *flagCreate, descVal); ok == nil {
+		if nextItem, ok := storage.CreateItem(ctx, *flagCreate); ok == nil {
 			storage.ListItem(nextItem)
 		}
-	case *flagUpdate > 0 && len(*flagDescription) > 0:
-		if ok := storage.UpdateDescription(ctx, *flagUpdate, descVal); ok == nil {
+	case *flagUpdate > 0 && *flagDescription != "":
+		if ok := storage.UpdateDescription(ctx, *flagUpdate, *flagDescription); ok == nil {
 			storage.ListItem(*flagUpdate)
 		}
 	case *flagNotStarted > 0:
