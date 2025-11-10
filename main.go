@@ -58,6 +58,7 @@ func main() {
 	var flagList = flag.Bool("list", false, "list items in the todo list ( optionally use -itemid num to show one item)")
 	var flagDescription = flag.String("description", "", "use this with -update for the update description text -description \"new text\"")
 	var flagItemID = flag.Int("itemid", 0, "optional, use this -itemid with -list for one item")
+	flag.Parse()
 
 	// item description for create and update
 	/*var itemDescription string
