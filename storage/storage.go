@@ -237,10 +237,6 @@ func GetItemByID(id int) (Item, error) {
 	}
 }
 
-func GetItems() Items {
-	return itemsList
-}
-
 // commitFile saves the current items list to the data file if it is open.
 func commitFile(ctx context.Context) {
 	if itemsList != nil {
