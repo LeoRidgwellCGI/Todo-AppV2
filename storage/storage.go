@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -32,6 +33,7 @@ type Item struct {
 
 type Items map[int]Item
 
+// newItem creates a new Item with the given parameters.
 func newItem(id int, description string, status string) Item {
 	item := Item{
 		ID:          id,
@@ -42,7 +44,7 @@ func newItem(id int, description string, status string) Item {
 	return item
 }
 
-// save list back to json file
+// Save writes the current items list to the specified json file.
 func Save(ctx context.Context, datafile string) error {
 	if data, err := json.Marshal(itemsList); err != nil {
 		fmt.Printf("Save failed converting todo list to json, error: %s \n", err)
@@ -67,7 +69,7 @@ func Save(ctx context.Context, datafile string) error {
 	return nil
 }
 
-// load list from json file
+// Load reads the items list from the specified json file.
 func Load(ctx context.Context, datafile string) (Items, error) {
 	destination, err := OpenFileReadWrite(datafile)
 	if err != nil {
@@ -81,7 +83,9 @@ func Load(ctx context.Context, datafile string) (Items, error) {
 	return loadItem(ctx, destination)
 }
 
+// loadItem reads and unmarshals the items from the given reader.
 func loadItem(ctx context.Context, destination io.Reader) (Items, error) {
+	// read all data from the reader
 	if item, err := io.ReadAll(destination); err != nil {
 		fmt.Println(err)
 		fmt.Printf("Load item failed, error: %s \n", err)
@@ -92,6 +96,7 @@ func loadItem(ctx context.Context, destination io.Reader) (Items, error) {
 		fmt.Printf("No data to load, returning empty item list \n")
 		return Items{}, nil
 	} else {
+		// unmarshal json data
 		data := []byte(string(item))
 		itemsList := Items{}
 		err := json.Unmarshal(data, &itemsList)
@@ -104,20 +109,27 @@ func loadItem(ctx context.Context, destination io.Reader) (Items, error) {
 	}
 }
 
+// Open initializes the storage by loading items from the specified data file.
 func Open(ctx context.Context, datafile string) error {
+	// load existing
 	items, err := Load(ctx, datafile)
 	if err != nil {
 		fmt.Printf("Open file failed, error: %s, datafile: %s\n", err, datafile)
 		slog.ErrorContext(ctx, "Open file failed", "error", err, "datafile", datafile)
 		return err
 	}
+
+	// set global items list
 	itemsList = items
 	itemsDatafile = datafile
+
+	// log loaded items count
 	fmt.Printf("Opened file and loaded items, count: %d, datafile: %s \n", len(itemsList), datafile)
 	slog.InfoContext(ctx, "Opened file and loaded items", "count", len(itemsList), "datafile", datafile)
 	return nil
 }
 
+// CreateItem creates a new item with the given description and adds it to the items list.
 func CreateItem(ctx context.Context, description string) (int, error) {
 	// Validate inputs
 	if description == "" {
@@ -141,6 +153,7 @@ func CreateItem(ctx context.Context, description string) (int, error) {
 	return nextKey, nil
 }
 
+// UpdateDescription updates the description of the item with the given index.
 func UpdateDescription(ctx context.Context, index int, description string) error {
 	// Validate inputs
 	if description == "" {
@@ -148,7 +161,7 @@ func UpdateDescription(ctx context.Context, index int, description string) error
 	}
 
 	// Update the item
-	fmt.Printf("Updating item description:\n")
+	fmt.Printf("Updating item %d description:\n", index)
 
 	// check item exists
 	item, exists := itemsList[index]
@@ -171,22 +184,129 @@ func UpdateDescription(ctx context.Context, index int, description string) error
 	return nil
 }
 
+// UpdateStatus updates the status of the item with the given index.
 func UpdateStatus(ctx context.Context, index int, status string) error {
-	fmt.Printf("Updating item status:\n")
+	// Validate inputs
+	validStatuses := []string{StatusNotStarted, StatusStarted, StatusCompleted}
+	if !slices.Contains(validStatuses, status) {
+		return errors.New("invalid status value")
+	}
+
+	// Update the item
+	fmt.Printf("Updating item %d status:\n", index)
+
+	// check item exists
+	item, exists := itemsList[index]
+	if !exists {
+		return errors.New("item not found")
+	}
+
+	// update status
+	item.Status = status
+	itemsList[index] = item
+
+	// Commit to file
+	CommitFile(ctx)
+
+	// Log update
+	slog.InfoContext(ctx, "Updated item status", "ID", item.ID, "New Status", item.Status)
+	fmt.Printf("Updated item status, ID: %d, New Status: %s \n", item.ID, item.Status)
+
+	// return nil error
 	return nil
 }
 
 func UpdateItem(ctx context.Context, item Item) (Item, error) {
-	fmt.Printf("Updating item:\n")
-	return newItem(1, "test", "test"), nil
+	// Validate inputs
+	if item.ID <= 0 {
+		return Item{}, errors.New("invalid item ID")
+	}
+	if item.Description == "" {
+		return Item{}, errors.New("description cannot be empty")
+	}
+	validStatuses := []string{StatusNotStarted, StatusStarted, StatusCompleted}
+	if !slices.Contains(validStatuses, item.Status) {
+		return Item{}, errors.New("invalid status value")
+	}
+
+	// Update the item
+	fmt.Printf("Updating item %d:\n", item.ID)
+
+	// check item exists
+	current, exists := itemsList[item.ID]
+	if !exists {
+		return Item{}, errors.New("item not found")
+	}
+
+	// update item
+	current.Description = item.Description
+	current.Status = item.Status
+	itemsList[item.ID] = current
+
+	// Commit to file
+	CommitFile(ctx)
+
+	// Log update
+	slog.InfoContext(ctx, "Updated item", "ID", item.ID, "New Description", item.Description, "New Status", item.Status)
+	fmt.Printf("Updated item, ID: %d, New Description: %s, New Status: %s \n", item.ID, item.Description, item.Status)
+
+	// return updated item
+	return item, nil
 }
 
 func DeleteItem(ctx context.Context, index int) error {
-	fmt.Printf("Deleting item:\n")
+	// validate inputs
+	if index <= 0 {
+		return errors.New("invalid item ID")
+	}
+
+	// Delete the item
+	fmt.Printf("Deleting item %d:\n", index)
+
+	// check item exists
+	_, exists := itemsList[index]
+	if !exists {
+		return errors.New("item not found")
+	}
+
+	// delete item
+	delete(itemsList, index)
+
+	// Commit to file
+	CommitFile(ctx)
+
+	// Log deletion
+	slog.InfoContext(ctx, "Deleted item", "ID", index)
+	fmt.Printf("Deleted item, ID: %d \n", index)
+
+	// return nil error
 	return nil
 }
-func ListItem(index int) {
+func ListItem(index int) error {
+	// List items
 	fmt.Printf("Listing items:\n")
+
+	// print header
+	fmt.Printf("%s\t%s\t\t%s\n", "ID", "Status", "Description")
+	fmt.Printf("%s\t%s\t%s\n", strings.Repeat("-", 1), strings.Repeat("-", 12), strings.Repeat("-", 120))
+
+	// reference current items list
+	if len(itemsList) > 0 {
+		if listItem, ok := itemsList[index]; ok {
+			fmt.Printf("%d\t%s\t%s\t[%s]\n", listItem.ID, listItem.Status, listItem.Description, listItem.Created.Format(time.RFC822))
+		} else {
+			itemKeys := collectKeys(itemsList)
+			slices.Sort(itemKeys)
+			for _, i := range itemKeys {
+				listItem := itemsList[i]
+				fmt.Printf("%d\t%s\t%s\t[%s]\n", listItem.ID, listItem.Status, listItem.Description, listItem.Created.Format(time.RFC822))
+			}
+		}
+	} else {
+		// no items to list
+		return errors.New("no items to list")
+	}
+	return nil
 }
 
 // OpenFileReadWrite opens (or creates) a file for reading and writing.
@@ -216,22 +336,11 @@ func OpenFileWriteTruncate(fileName string) (*os.File, error) {
 	}
 }
 
-// IsDataFileOpen checks if the data file is currently open.
-func IsDataFileOpen() bool {
-	return (itemsList != nil)
-}
-
 // CommitFile saves the current items list to the data file if it is open.
 func CommitFile(ctx context.Context) {
-	if IsDataFileOpen() {
+	if itemsList != nil {
 		Save(ctx, itemsDatafile)
 	}
-}
-
-// validateStatus checks if the provided status is one of the valid statuses.
-func validateStatus(status string) bool {
-	validStatuses := []string{StatusNotStarted, StatusStarted, StatusCompleted}
-	return slices.Contains(validStatuses, status)
 }
 
 // collectKeys collects the keys from the Items map and returns them as a slice of ints.

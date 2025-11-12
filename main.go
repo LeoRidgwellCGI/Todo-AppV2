@@ -25,7 +25,7 @@ const (
 
 type ctxKey string
 
-const traceIDKey ctxKey = "trace_id"
+const traceIDKey ctxKey = "Trace ID"
 
 type ContextHandler struct {
 	slog.Handler
@@ -33,20 +33,20 @@ type ContextHandler struct {
 
 var (
 	runMode RunMode
-	handler ContextHandler
 )
 
-// Handle adds context information (like trace_id) to the log record before passing it to the underlying handler.
-func Handle(ctx context.Context, r slog.Record) error {
+// Handle adds context information (like Trace ID) to the log record before passing it to the underlying handler.
+func (h *ContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if traceID, ok := ctx.Value(traceIDKey).(string); ok {
 		r.AddAttrs(slog.String(string(traceIDKey), traceID))
 	}
-	return handler.Handle(ctx, r)
+	return h.Handler.Handle(ctx, r)
 }
 
 func main() {
 	// default to cli mode
 	runMode = RunModeCLI
+
 	// input flags
 	var flagCreate = flag.String("create", "", "create todo task item (\"description\")")
 	var flagUpdate = flag.Int("update", 0, "update todo task item description (id -description \"new description\")")
@@ -59,27 +59,6 @@ func main() {
 	var flagItemID = flag.Int("itemid", 0, "optional, use this -itemid with -list for one item")
 	flag.Parse()
 
-	// item description for create and update
-	/*var itemDescription string
-	flag.Func("description", "use this with -update for the update description text -description \"new text\"", func(s string) error {
-		if len(s) == 0 {
-			return errors.New("value of description needs to be supplied")
-		} else {
-			itemDescription = s
-		}
-		return nil
-	})
-
-	// item id for listing one task
-	var itemID int
-	flag.Func("itemid", "optional, use this -itemid with -list for one item", func(s string) error {
-		if i, ok := strconv.Atoi(s); ok != nil {
-			return errors.New("value of itemid needs to be supplied")
-		} else {
-			itemID = i
-		}
-		return nil
-	})*/
 	// setup application context with trace id
 	traceID := logging.GenerateID()
 	ctx := context.WithValue(context.Background(), traceIDKey, traceID)
@@ -103,6 +82,7 @@ func main() {
 
 	// init / pickup current list before process command
 	storagefile := fmt.Sprintf("%s\\%s", dir, datafile)
+
 	// open the data file for cli and api
 	openErr := storage.Open(ctx, storagefile)
 	if openErr != nil {
