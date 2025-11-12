@@ -48,11 +48,11 @@ func main() {
 	runMode = RunModeCLI
 
 	// input flags
-	var flagCreate = flag.String("create", "", "create todo task item (\"description\") (optionally use -status \"not_started|started|completed\")")
-	var flagUpdate = flag.Int("update", 0, "update todo task item description (id -description \"new description\") (optionally use -status \"not_started|started|completed\")")
+	var flagCreate = flag.String("create", "", "create todo task item (\"description\") (optionally use -status \"not_started|has_started|completed\")")
+	var flagUpdate = flag.Int("update", 0, "update todo task item description (id -description \"new description\") (optionally use -status \"not_started|has_started|completed\")")
 	var flagDelete = flag.Int("delete", 0, "delete a todo task item ( id )")
 	var flagList = flag.Bool("list", false, "list items in the todo list ( optionally use -itemid num to show one item)")
-	var flagStatus = flag.String("status", "", "use this with -create or -update to set the status (\"not_started|started|completed\")")
+	var flagStatus = flag.String("status", "", "use this with -create or -update to set the status (\"not_started|has_started|completed\")")
 	var flagDescription = flag.String("description", "", "use this with -update for the update description text -description \"new text\"")
 	var flagItemID = flag.Int("itemid", 0, "optional, use this -itemid with -list for one item")
 	flag.Parse()
@@ -96,44 +96,65 @@ func main() {
 		storage.ListItem(*flagItemID)
 	case *flagCreate != "":
 		if *flagStatus != "" {
-			if *flagStatus == "not_started" || *flagStatus == "started" || *flagStatus == "completed" {
+			if *flagStatus == "not_started" || *flagStatus == "has_started" || *flagStatus == "completed" {
 				// valid status
 			} else {
-				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'started', or 'completed'.\n", *flagStatus)
+				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'has_started', or 'completed'.\n", *flagStatus)
 				slog.ErrorContext(ctx, "Invalid status value for create", "Status", *flagStatus)
 				*flagStatus = "not_started"
 			}
 		}
 		if newItem, ok := storage.CreateItem(ctx, *flagCreate, *flagStatus); ok == nil {
 			storage.ListItem(newItem.ID)
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed to create item.\n")
+			slog.ErrorContext(ctx, "Failed to create item", "Description", *flagCreate, "Status", *flagStatus)
 		}
-	case *flagUpdate > 0 && *flagDescription != "":
+	case *flagUpdate > 0:
+		if *flagDescription == "" {
+			fmt.Fprintf(os.Stderr, "Update requires -description \"new description\" to be set.\n")
+			slog.ErrorContext(ctx, "Update missing description", "ItemID", *flagUpdate)
+			break
+		}
+
+		// get existing item
 		if item, ok := storage.GetItemByID(*flagUpdate); ok == nil {
 			newItem := item
 			newItem.Description = *flagDescription
-			if *flagStatus != "" {
-				if *flagStatus == "not_started" || *flagStatus == "started" || *flagStatus == "completed" {
-					newItem.Status = *flagStatus
-				} else {
-					fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'started', or 'completed'.\n", *flagStatus)
-					slog.ErrorContext(ctx, "Invalid status value for update", "Status", *flagStatus)
-				}
+			if *flagStatus == "not_started" || *flagStatus == "has_started" || *flagStatus == "completed" {
+				newItem.Status = *flagStatus
+			} else {
+				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'has_started', or 'completed'.\n", *flagStatus)
+				slog.ErrorContext(ctx, "Invalid status value for update", "Status", *flagStatus)
+				break
 			}
+
+			// perform the update
 			if _, ok := storage.UpdateItem(ctx, newItem); ok == nil {
 				storage.ListItem(*flagUpdate)
+			} else {
+				fmt.Fprintf(os.Stderr, "Failed to update item ID %d.\n", *flagUpdate)
+				slog.ErrorContext(ctx, "Failed to update item", "ItemID", *flagUpdate)
 			}
+		} else {
+			fmt.Fprintf(os.Stderr, "Item ID %d not found for update.\n", *flagUpdate)
+			slog.ErrorContext(ctx, "Item ID not found for update", "ItemID", *flagUpdate)
 		}
 	case *flagDelete > 0:
-		storage.DeleteItem(ctx, *flagDelete)
-		storage.ListItem(-1)
+		if ok := storage.DeleteItem(ctx, *flagDelete); ok == nil {
+			storage.ListItem(0)
+		} else {
+			fmt.Fprintf(os.Stderr, "Item ID %d not found for delete.\n", *flagDelete)
+			slog.ErrorContext(ctx, "Item ID not found for delete", "ItemID", *flagDelete)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, `Todo-App
 Manage to-do items: list, add, update descriptions, or delete by ID.
 
 Usage:
   go run . -list [-itemid <id>]
-  go run . -create "<description> " [-status "not_started|started|completed"]
-  go run . -update <id> "<new description> " [-status "not_started|started|completed"]
+  go run . -create "<description> " [-status "not_started|has_started|completed"]
+  go run . -update <id> "<new description> " [-status "not_started|has_started|completed"]
   go run . -delete <id>
 `)
 	}

@@ -37,7 +37,7 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 func updateItemHandler(w http.ResponseWriter, r *http.Request) {
 	id := 1
 	description := "Updated Task"
-	status := "started"
+	status := "has_started"
 	actor.Update(id, description, status)
 }
 

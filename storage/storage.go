@@ -104,7 +104,7 @@ func CreateItem(ctx context.Context, description string, status string) (Item, e
 		return Item{}, errors.New("description cannot be empty")
 	}
 	if status != "" {
-		if status != "not_started" && status != "started" && status != "completed" {
+		if status != "not_started" && status != "has_started" && status != "completed" {
 			return Item{}, errors.New("invalid status value")
 		}
 	} else {
@@ -136,7 +136,7 @@ func UpdateItem(ctx context.Context, item Item) (Item, error) {
 	if item.Description == "" {
 		return Item{}, errors.New("description cannot be empty")
 	}
-	if item.Status != "not_started" && item.Status != "started" && item.Status != "completed" {
+	if item.Status != "not_started" && item.Status != "has_started" && item.Status != "completed" {
 		return Item{}, errors.New("invalid status value")
 	}
 
@@ -150,9 +150,7 @@ func UpdateItem(ctx context.Context, item Item) (Item, error) {
 	}
 
 	// update item
-	current.Description = item.Description
-	current.Status = item.Status
-	itemsList[item.ID] = current
+	itemsList[item.ID] = item
 
 	// Commit to file
 	commitFile(ctx)
@@ -228,7 +226,8 @@ func GetItemByID(id int) (Item, error) {
 	}
 	// retrieve item by ID
 	if len(itemsList) > 0 {
-		if item, ok := itemsList[id]; ok {
+		item, ok := itemsList[id]
+		if ok {
 			return item, nil
 		} else {
 			return Item{}, errors.New("item not found")
