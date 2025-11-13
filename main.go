@@ -96,6 +96,7 @@ func main() {
 	// process the flags
 	switch {
 	case *flagList:
+		// list items (all if itemid is 0, or single item by id)
 		storage.ListItem(*flagItemID)
 	case *flagCreate != "":
 		if *flagStatus != "" {
@@ -114,6 +115,7 @@ func main() {
 			slog.ErrorContext(ctx, "Failed to create item", "Description", *flagCreate, "Status", *flagStatus)
 		}
 	case *flagUpdate > 0:
+		// validate description is not missing
 		if *flagDescription == "" {
 			fmt.Fprintf(os.Stderr, "Update requires -description \"new description\" to be set.\n")
 			slog.ErrorContext(ctx, "Update missing description", "ItemID", *flagUpdate)
@@ -144,6 +146,7 @@ func main() {
 			slog.ErrorContext(ctx, "Item ID not found for update", "ItemID", *flagUpdate)
 		}
 	case *flagDelete > 0:
+		// perform delete
 		if ok := storage.DeleteItem(ctx, *flagDelete); ok == nil {
 			storage.ListItem(0)
 		} else {
@@ -151,8 +154,10 @@ func main() {
 			slog.ErrorContext(ctx, "Item ID not found for delete", "ItemID", *flagDelete)
 		}
 	case *flagServer:
+		// start server mode
 		runMode = RunModeServer
 	default:
+		// print usage
 		fmt.Fprintf(os.Stderr, `Todo-App
 Manage to-do items: list, add, update descriptions, or delete by ID.
 
