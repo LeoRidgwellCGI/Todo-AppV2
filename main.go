@@ -157,10 +157,11 @@ func main() {
 Manage to-do items: list, add, update descriptions, or delete by ID.
 
 Usage:
-  go run . -list [-itemid <id>]
-  go run . -create "<description> " [-status "not_started|has_started|completed"]
-  go run . -update <id> "<new description> " [-status "not_started|has_started|completed"]
-  go run . -delete <id>
+  go run . -list [-itemid <id>] (list all items or one item by ID)
+  go run . -create "<description> " [-status "not_started|has_started|completed"] (create new item)
+  go run . -update <id> "<new description> " [-status "not_started|has_started|completed"] (update item)
+  go run . -delete <id> (delete item by ID)
+  go run . -server true (to start HTTP API server)
 `)
 	}
 
