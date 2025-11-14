@@ -80,7 +80,7 @@ func TestActor_CreateMultiple(t *testing.T) {
 		status string
 	}{
 		{"Item 1", "not_started"},
-		{"Item 2", "has_started"},
+		{"Item 2", "in_progress"},
 		{"Item 3", "completed"},
 	}
 
@@ -179,7 +179,7 @@ func TestActor_Update(t *testing.T) {
 	}
 
 	// Update the item
-	updated, err := actor.Update(ctx, created.ID, "Updated Description", "has_started")
+	updated, err := actor.Update(ctx, created.ID, "Updated Description", "in_progress")
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -190,8 +190,8 @@ func TestActor_Update(t *testing.T) {
 	if updated.Description != "Updated Description" {
 		t.Errorf("Expected description 'Updated Description', got '%s'", updated.Description)
 	}
-	if updated.Status != "has_started" {
-		t.Errorf("Expected status 'has_started', got '%s'", updated.Status)
+	if updated.Status != "in_progress" {
+		t.Errorf("Expected status 'in_progress', got '%s'", updated.Status)
 	}
 }
 
@@ -203,7 +203,7 @@ func TestActor_Update_NotFound(t *testing.T) {
 	ctx := context.Background()
 	actor := NewActor(ctx)
 
-	_, err := actor.Update(ctx, 999, "Updated Description", "has_started")
+	_, err := actor.Update(ctx, 999, "Updated Description", "in_progress")
 	if err == nil {
 		t.Error("Expected error for non-existent item, got nil")
 	}
@@ -392,7 +392,7 @@ func TestActor_Concurrency_Update(t *testing.T) {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
-			_, err := actor.Update(ctx, created.ID, "Updated", "has_started")
+			_, err := actor.Update(ctx, created.ID, "Updated", "in_progress")
 			if err != nil {
 				errChan <- err
 			}
@@ -448,7 +448,7 @@ func TestActor_Concurrency_MixedOperations(t *testing.T) {
 			case 1: // Read
 				_, err = actor.ListAll(ctx)
 			case 2: // Update
-				_, err = actor.Update(ctx, 1, "Updated", "has_started")
+				_, err = actor.Update(ctx, 1, "Updated", "in_progress")
 			case 3: // Read single
 				_, err = actor.List(ctx, 1)
 			}
@@ -491,7 +491,7 @@ func TestActor_Concurrency_SequentialOperations(t *testing.T) {
 	}
 
 	// Update
-	updated, err := actor.Update(ctx, created.ID, "Updated Sequential", "has_started")
+	updated, err := actor.Update(ctx, created.ID, "Updated Sequential", "in_progress")
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}

@@ -30,7 +30,7 @@ Built with an actor pattern for safe concurrent operations and comprehensive tes
 - **Comprehensive Logging**: Structured logging with trace IDs
 - **Thread-Safe**: Built-in concurrency support for multiple operations
 - **Full CRUD Operations**: Create, Read, Update, Delete todo items
-- **Status Management**: Track items as not_started, has_started, or completed
+- **Status Management**: Track items as not_started, in_progress, or completed
 - **High Test Coverage**: Extensive unit tests including concurrency tests
 
 ## 🏗️ Architecture
@@ -97,7 +97,7 @@ go run . -create "Buy groceries" -status not_started
 
 #### Update an existing item:
 ```bash
-go run . -update 1 -description "Buy groceries and cook dinner" -status has_started
+go run . -update 1 -description "Buy groceries and cook dinner" -status in_progress
 ```
 
 #### Delete an item:
@@ -107,7 +107,7 @@ go run . -delete 1
 
 #### Valid status values:
 - `not_started` - Task hasn't been started
-- `has_started` - Task is in progress
+- `in_progress` - Task is in progress
 - `completed` - Task is finished
 
 ### Server Mode
@@ -180,7 +180,7 @@ Update an existing todo item
 {
   "id": 1,
   "description": "Buy groceries and cook dinner",
-  "status": "has_started"
+  "status": "in_progress"
 }
 ```
 
@@ -189,7 +189,7 @@ Update an existing todo item
 {
   "id": 1,
   "description": "Buy groceries and cook dinner",
-  "status": "has_started",
+  "status": "in_progress",
   "created": "2025-11-14T10:00:00Z"
 }
 ```

@@ -109,7 +109,7 @@ func CreateItem(ctx context.Context, description string, status string) (Item, e
 		return Item{}, errors.New("description cannot be empty")
 	}
 	if status != "" {
-		if status != "not_started" && status != "has_started" && status != "completed" {
+		if status != "not_started" && status != "in_progress" && status != "completed" {
 			return Item{}, errors.New("invalid status value")
 		}
 	} else {
@@ -142,7 +142,7 @@ func UpdateItem(ctx context.Context, item Item) (Item, error) {
 	if item.Description == "" {
 		return Item{}, errors.New("description cannot be empty")
 	}
-	if item.Status != "not_started" && item.Status != "has_started" && item.Status != "completed" {
+	if item.Status != "not_started" && item.Status != "in_progress" && item.Status != "completed" {
 		return Item{}, errors.New("invalid status value")
 	}
 

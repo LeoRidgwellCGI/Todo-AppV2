@@ -50,11 +50,11 @@ func main() {
 	runMode = RunModeCLI
 
 	// input flags
-	var flagCreate = flag.String("create", "", "create todo task item (\"description\") (optionally use -status \"not_started|has_started|completed\")")
-	var flagUpdate = flag.Int("update", 0, "update todo task item description (id -description \"new description\") (optionally use -status \"not_started|has_started|completed\")")
+	var flagCreate = flag.String("create", "", "create todo task item (\"description\") (optionally use -status \"not_started|in_progress|completed\")")
+	var flagUpdate = flag.Int("update", 0, "update todo task item description (id -description \"new description\") (optionally use -status \"not_started|in_progress|completed\")")
 	var flagDelete = flag.Int("delete", 0, "delete a todo task item ( id )")
 	var flagList = flag.Bool("list", false, "list items in the todo list ( optionally use -itemid num to show one item)")
-	var flagStatus = flag.String("status", "", "use this with -create or -update to set the status (\"not_started|has_started|completed\")")
+	var flagStatus = flag.String("status", "", "use this with -create or -update to set the status (\"not_started|in_progress|completed\")")
 	var flagDescription = flag.String("description", "", "use this with -update for the update description text -description \"new text\"")
 	var flagItemID = flag.Int("itemid", 0, "optional, use this -itemid with -list for one item")
 	var flagServer = flag.Bool("server", false, "run in server mode (starts HTTP API server)")
@@ -100,10 +100,10 @@ func main() {
 		storage.ListItem(*flagItemID)
 	case *flagCreate != "":
 		if *flagStatus != "" {
-			if *flagStatus == "not_started" || *flagStatus == "has_started" || *flagStatus == "completed" {
+			if *flagStatus == "not_started" || *flagStatus == "in_progress" || *flagStatus == "completed" {
 				// valid status
 			} else {
-				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'has_started', or 'completed'.\n", *flagStatus)
+				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'in_progress', or 'completed'.\n", *flagStatus)
 				slog.ErrorContext(ctx, "Invalid status value for create", "Status", *flagStatus)
 				*flagStatus = "not_started"
 			}
@@ -126,10 +126,10 @@ func main() {
 		if item, ok := storage.GetItemByID(*flagUpdate); ok == nil {
 			newItem := item
 			newItem.Description = *flagDescription
-			if *flagStatus == "not_started" || *flagStatus == "has_started" || *flagStatus == "completed" {
+			if *flagStatus == "not_started" || *flagStatus == "in_progress" || *flagStatus == "completed" {
 				newItem.Status = *flagStatus
 			} else {
-				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'has_started', or 'completed'.\n", *flagStatus)
+				fmt.Fprintf(os.Stderr, "Invalid status value: %s. Use 'not_started', 'in_progress', or 'completed'.\n", *flagStatus)
 				slog.ErrorContext(ctx, "Invalid status value for update", "Status", *flagStatus)
 				break
 			}
@@ -163,8 +163,8 @@ Manage to-do items: list, add, update descriptions, or delete by ID.
 
 Usage:
   go run . -list [-itemid <id>] (list all items or one item by ID)
-  go run . -create "<description> " [-status "not_started|has_started|completed"] (create new item)
-  go run . -update <id> "<new description> " [-status "not_started|has_started|completed"] (update item)
+  go run . -create "<description> " [-status "not_started|in_progress|completed"] (create new item)
+  go run . -update <id> "<new description> " [-status "not_started|in_progress|completed"] (update item)
   go run . -delete <id> (delete item by ID)
   go run . -server true (to start HTTP API server)
 `)
