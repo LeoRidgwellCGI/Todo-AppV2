@@ -39,13 +39,13 @@ The application uses a clean architecture with the following layers:
 
 ```
 ┌─────────────────────────────────────────────┐
-│           CLI / HTTP Handler Layer           │
+│           CLI / HTTP Handler Layer          │
 ├─────────────────────────────────────────────┤
-│              Actor Layer (Channels)          │
+│            Actor Layer (Channels)           │
 ├─────────────────────────────────────────────┤
-│              Storage Layer (JSON)            │
+│             Storage Layer (JSON)            │
 ├─────────────────────────────────────────────┤
-│            File System / Logging             │
+│            File System / Logging            │
 └─────────────────────────────────────────────┘
 ```
 
