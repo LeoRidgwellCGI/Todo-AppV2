@@ -11,7 +11,16 @@ import (
 	"todo-app/storage"
 )
 
-var actorInstance *actor.Actor
+// ActorInterface defines the methods required by handlers
+type ActorInterface interface {
+	Create(ctx context.Context, description string, status string) (storage.Item, error)
+	Update(ctx context.Context, id int, description string, status string) (storage.Item, error)
+	Delete(ctx context.Context, id int) error
+	ListAll(ctx context.Context) (storage.Items, error)
+	List(ctx context.Context, id int) (storage.Item, error)
+}
+
+var actorInstance ActorInterface
 
 // InitActor initializes the actor instance.
 func InitActor(ctx context.Context) {
