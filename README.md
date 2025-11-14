@@ -108,7 +108,7 @@ go run . -delete 1
 #### Valid status values:
 - `not_started` - Task hasn't been started
 - `in_progress` - Task is in progress
-- `completed` - Task is finished
+- `completed` - Task has been completed
 
 ### Server Mode
 
